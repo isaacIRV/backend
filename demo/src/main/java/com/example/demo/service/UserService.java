@@ -2,6 +2,8 @@ package com.example.demo.service;
 
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.exception.UserNotFoundException;
+import com.example.demo.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -20,23 +22,23 @@ public class UserService {
 
     public User getById(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado con ID: " + id));
     }
 
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado: " + username));
     }
 
     public User registerUser(User.RegisterRequest request) {
         // Verificar si el usuario ya existe
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("El usuario ya existe");
+            throw new UserAlreadyExistsException("El usuario ya existe: " + request.getUsername());
         }
         
         // Verificar si el email ya existe
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya está en uso");
+            throw new UserAlreadyExistsException("El email ya está en uso: " + request.getEmail());
         }
         
         // Crear nuevo usuario
@@ -52,7 +54,7 @@ public class UserService {
 
     public User authenticateUser(User.LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuario o contraseña incorrectos"));
+                .orElseThrow(() -> new UserNotFoundException("Usuario o contraseña incorrectos"));
         
         if (!user.getPassword().equals(request.getPassword())) {
             throw new RuntimeException("Usuario o contraseña incorrectos");
@@ -66,16 +68,63 @@ public class UserService {
     public User updateUser(String username, Map<String, Object> updates) {
         User user = getUserByUsername(username);
         
-        // Actualizar campos permitidos
+        // Validar y actualizar campos permitidos
         if (updates.containsKey("email")) {
-            user.setEmail((String) updates.get("email"));
+            String newEmail = (String) updates.get("email");
+            
+            // Verificar si el nuevo email ya existe (y no es del mismo usuario)
+            if (!newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+                throw new UserAlreadyExistsException("El email ya está en uso: " + newEmail);
+            }
+            user.setEmail(newEmail);
+        }
+        
+        // MEJORA: Permitir actualizar más campos del juego TCG
+        if (updates.containsKey("coins")) {
+            user.setCoins((Integer) updates.get("coins"));
+        }
+        
+        if (updates.containsKey("wins")) {
+            user.setWins((Integer) updates.get("wins"));
+        }
+        
+        if (updates.containsKey("losses")) {
+            user.setLosses((Integer) updates.get("losses"));
         }
         
         user.setUpdatedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
 
+    // MEJORA: Método DELETE con validación
     public void delete(String id) {
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException("Usuario no encontrado con ID: " + id);
+        }
         userRepository.deleteById(id);
+    }
+
+    // NUEVO: Método para agregar monedas a un usuario
+    public User addCoins(String username, int coins) {
+        User user = getUserByUsername(username);
+        user.setCoins(user.getCoins() + coins);
+        user.setUpdatedAt(LocalDateTime.now());
+        return userRepository.save(user);
+    }
+
+    // NUEVO: Método para actualizar estadísticas de juego
+    public User updateGameStats(String username, boolean won) {
+        User user = getUserByUsername(username);
+        
+        if (won) {
+            user.setWins(user.getWins() + 1);
+            user.setCoins(user.getCoins() + 50); // Recompensa por ganar
+        } else {
+            user.setLosses(user.getLosses() + 1);
+            user.setCoins(user.getCoins() + 10); // Recompensa por participar
+        }
+        
+        user.setUpdatedAt(LocalDateTime.now());
+        return userRepository.save(user);
     }
 }

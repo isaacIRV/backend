@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.UserService;
-import com.example.demo.model.User;  // ← ¡AGREGA ESTA IMPORTACIÓN!
+import com.example.demo.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +29,7 @@ public class UserController {
             response.put("losses", user.getLosses());
             response.put("decks", user.getDecks());
             response.put("cardCollection", user.getCardCollection());
+            response.put("createdAt", user.getCreatedAt());
             
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -47,6 +48,40 @@ public class UserController {
             response.put("message", "Perfil actualizado exitosamente");
             response.put("username", updatedUser.getUsername());
             response.put("email", updatedUser.getEmail());
+            response.put("coins", updatedUser.getCoins());
+            response.put("updatedAt", updatedUser.getUpdatedAt());
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(createErrorResponse(e.getMessage()));
+        }
+    }
+
+    // NUEVO: Endpoint DELETE para eliminar usuario por ID
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable String id) {
+        try {
+            userService.delete(id);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Usuario eliminado exitosamente");
+            response.put("id", id);
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(createErrorResponse(e.getMessage()));
+        }
+    }
+
+    // NUEVO: Endpoint para obtener todos los usuarios (solo desarrollo)
+    @GetMapping
+    public ResponseEntity<?> getAllUsers() {
+        try {
+            var users = userService.getAll();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("total", users.size());
+            response.put("users", users);
             
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
