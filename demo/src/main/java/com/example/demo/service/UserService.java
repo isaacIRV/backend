@@ -68,6 +68,17 @@ public class UserService {
     public User updateUser(String username, Map<String, Object> updates) {
         User user = getUserByUsername(username);
         
+        // NUEVO: Permitir actualizar username
+        if (updates.containsKey("username")) {
+            String newUsername = (String) updates.get("username");
+            
+            // Verificar si el nuevo username ya existe (y no es del mismo usuario)
+            if (!newUsername.equals(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
+                throw new UserAlreadyExistsException("El username ya está en uso: " + newUsername);
+            }
+            user.setUsername(newUsername);
+        }
+        
         // Validar y actualizar campos permitidos
         if (updates.containsKey("email")) {
             String newEmail = (String) updates.get("email");
@@ -79,7 +90,7 @@ public class UserService {
             user.setEmail(newEmail);
         }
         
-        // MEJORA: Permitir actualizar más campos del juego TCG
+        // Actualizar campos del juego TCG
         if (updates.containsKey("coins")) {
             user.setCoins((Integer) updates.get("coins"));
         }
