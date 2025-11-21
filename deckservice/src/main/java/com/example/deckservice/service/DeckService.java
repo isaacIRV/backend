@@ -42,8 +42,13 @@ public class DeckService {
         Deck deck = getDeck(deckId, userId);
         
         if (updates.getDeckName() != null) {
+            if (!updates.getDeckName().equals(deck.getDeckName()) && 
+                deckRepository.existsByUserIdAndDeckName(userId, updates.getDeckName())) {
+                throw new RuntimeException("Ya tienes un mazo con ese nombre");
+            }
             deck.setDeckName(updates.getDeckName());
         }
+        
         if (updates.getCards() != null) {
             deck.setCards(updates.getCards());
         }
@@ -53,7 +58,6 @@ public class DeckService {
     }
 
     public void deleteDeck(String deckId, String userId) {
-        // LÍNEA CORREGIDA:
         Deck deck = deckRepository.findByIdAndUserId(deckId, userId)
                 .orElseThrow(() -> new RuntimeException("Mazo no encontrado"));
         deckRepository.delete(deck);

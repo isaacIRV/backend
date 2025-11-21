@@ -11,7 +11,12 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins(
+                    "http://localhost:3000",
+                    "http://localhost:8080", 
+                    "http://s3-realmsindiscord-react-fullstack.s3-website-us-east-1.amazonaws.com",
+                    "https://s3-realmsindiscord-react-fullstack.s3-website-us-east-1.amazonaws.com"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
