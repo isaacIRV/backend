@@ -1,4 +1,4 @@
-package com.example.deckbuilder.config;
+package com.example.deckservice.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
